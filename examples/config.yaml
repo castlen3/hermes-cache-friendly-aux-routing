@@ -1,0 +1,81 @@
+# Example: Full Hermes config.yaml with auxiliary routing
+#
+# This is an illustrative example. Replace provider names, model IDs,
+# and endpoints with your own.
+
+# ─── Main Providers ──────────────────────────────────────────
+
+providers:
+  # Your main model — handles conversation turns
+  main-model:
+    provider: openrouter
+    model: anthropic/claude-sonnet-4
+    # or a local endpoint:
+    # base_url: http://localhost:8089/v1
+    # model: qwen3.6-27b
+    # api_key: not-needed
+
+  # Your auxiliary model — handles background tasks
+  aux-model:
+    base_url: http://localhost:1234/v1
+    model: qwen/qwen3.5-35b-a3b
+    api_key: lm-studio
+    discover_models: false
+
+  # Default cloud provider for fallback
+  opencode-go:
+    provider: opencode
+    model: deepseek-v4-pro
+
+# ─── Default provider ────────────────────────────────────────
+
+# Used for the main conversation
+default_provider: main-model
+model: anthropic/claude-sonnet-4
+
+# ─── Auxiliary Task Routing ──────────────────────────────────
+
+auxiliary:
+  # Generate conversation titles
+  title_generation:
+    provider: aux-model
+    model: qwen/qwen3.5-35b-a3b
+    fallback_chain:
+      - provider: opencode-go
+        model: deepseek-chat
+
+  # Extract and summarize web page content
+  web_extract:
+    provider: aux-model
+    model: qwen/qwen3.5-35b-a3b
+    fallback_chain:
+      - provider: opencode-go
+        model: deepseek-chat
+    timeout: 360
+
+  # Search past conversation history
+  session_search:
+    provider: aux-model
+    model: qwen/qwen3.5-35b-a3b
+    fallback_chain:
+      - provider: opencode-go
+        model: deepseek-chat
+
+  # Post-turn reflection and analysis
+  background_review:
+    provider: aux-model
+    model: qwen/qwen3.5-35b-a3b
+
+  # Conversation compression — KEEP ON DEFAULT
+  # DO NOT route compression to a cheap auxiliary model.
+  # Summary quality affects all subsequent turns.
+  compression:
+    provider: auto
+
+# ─── Other settings ──────────────────────────────────────────
+
+fallback_providers: []
+credential_pool_strategies: {}
+
+toolsets:
+  - hermes-cli
