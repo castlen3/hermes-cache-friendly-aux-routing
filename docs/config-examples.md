@@ -175,7 +175,7 @@ auxiliary:
 
 ## Case study: 200K context llama-server with local auxiliary Mac
 
-Real-world configuration from a production Hermes setup:
+Real-world style configuration from an example Hermes setup:
 
 - **Main model**: Qwen3.6 27B GGUF via llama-server (port 8089)
   - Context: 200,000 tokens

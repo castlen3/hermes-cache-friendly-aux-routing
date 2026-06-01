@@ -1,33 +1,37 @@
 """
 Illustrative patch for Hermes background_review.py
+====================================================
 
-This patch shows how to make background_review respect the auxiliary
-config section instead of always inheriting the main conversation's
-provider/model/endpoint.
+⚠️  IMPORTANT: This is an ILLUSTRATIVE EXAMPLE ONLY.
+    It is NOT guaranteed to run as-is on any specific Hermes version.
+    File paths, class structures, and function signatures vary between releases.
+    Use this as a reference for writing your own patch.
 
-WARNING: THIS IS AN ILLUSTRATIVE EXAMPLE. The exact file path, class
-structure, and function signatures depend on your Hermes version.
-Adjust accordingly.
+Purpose
+-------
+By default, background_review inherits the main conversation's provider,
+model, and endpoint. This patch makes it check the ``auxiliary`` section
+of config.yaml first, so it can be routed to a separate (cheaper) model.
 
-Tested against: Hermes Agent (June 2026)
-Concept: Read auxiliary.background_review config to determine provider routing
+Concept
+-------
+Read ``auxiliary.background_review`` from config.yaml.
+If found, use it. Otherwise, fall back to the main runtime.
 """
 
-# ============================================================
-# BEFORE (simplified)
-# ============================================================
-# Background review inherits the main runtime's provider/model/endpoint:
-#
-#   _review_provider = agent.provider
-#   _review_model = agent.model
-#   _review_base_url = _parent_runtime.get("base_url") or None
-#   _review_api_key = _parent_runtime.get("api_key") or None
+# -----------------------------------------------------------
+# BEFORE (simplified) — background_review inherits main runtime
+# -----------------------------------------------------------
+
+_review_provider = agent.provider
+_review_model = agent.model
+_review_base_url = _parent_runtime.get("base_url") or None
+_review_api_key = _parent_runtime.get("api_key") or None
 
 
-# ============================================================
-# AFTER (patched)
-# ============================================================
-# Background review checks auxiliary config first, falls back to main runtime:
+# -----------------------------------------------------------
+# AFTER (patched) — checks auxiliary config first
+# -----------------------------------------------------------
 
 _review_provider = agent.provider
 _review_model = agent.model
@@ -44,51 +48,59 @@ try:
         _review_base_url = cfg.get("base_url") or _review_base_url
         _review_api_key = cfg.get("api_key") or _review_api_key
 except Exception:
-    logger.debug("background_review: no auxiliary config; inheriting main runtime")
+    logger.debug(
+        "background_review: no auxiliary config; inheriting main runtime"
+    )
 
 logger.info(
     "background_review routing: provider=%s model=%s base_url=%s",
-    _review_provider, _review_model, _review_base_url,
+    _review_provider,
+    _review_model,
+    _review_base_url,
 )
 
-# The rest of the background_review logic uses _review_provider,
-# _review_model, _review_base_url, and _review_api_key for its
-# API calls instead of the main conversation's parameters.
+# The rest of background_review uses _review_provider, _review_model,
+# _review_base_url, and _review_api_key for its API calls instead of
+# the main conversation's parameters.
 
 
-# ============================================================
-# Integration notes
-# ============================================================
+# -----------------------------------------------------------
+# Integration guide
+# -----------------------------------------------------------
 #
-# 1. Locate the section in background_review.py where the provider/model
-#    are set from the main agent runtime.
+# 1. Find where provider/model are set from the main agent runtime
+#    in your version of background_review.py.
 #
-# 2. Insert the try/except block to check auxiliary config before
-#    falling back to main runtime values.
+# 2. Insert the try/except block above to check auxiliary config
+#    before falling back to main runtime values.
 #
-# 3. Verify the patch by checking agent.log for:
-#      background_review routing: provider=mac-local model=qwen/...
-#    instead of:
-#      background_review routing: provider=x99_llama model=Qwen...
+# 3. Verify by checking agent.log:
+#    Expected:
+#      background_review routing: provider=aux-model model=small-model ...
+#    Not:
+#      background_review routing: provider=main-model model=expensive-model ...
 #
-# 4. If _get_auxiliary_task_config is not available, implement it as a
-#    simple config reader that checks config.yaml's auxiliary section.
+# 4. If _get_auxiliary_task_config is not available in your version,
+#    use the fallback implementation below.
 
 
-# ============================================================
-# Minimal fallback implementation
-# ============================================================
-# If _get_auxiliary_task_config does not exist in your version,
-# implement it directly:
+# -----------------------------------------------------------
+# Minimal fallback — if _get_auxiliary_task_config doesn't exist
+# -----------------------------------------------------------
 
 def _get_auxiliary_task_config(task_name):
-    """Read auxiliary task config from config.yaml."""
-    import yaml
-    from hermes_constants import get_hermes_home
+    """
+    Read auxiliary task config from config.yaml.
 
-    config_path = get_hermes_home() / "config.yaml"
+    Returns a dict with provider/model/base_url/api_key keys,
+    or an empty dict if not configured.
+    """
+    import yaml
+    from pathlib import Path
+
+    config_path = Path.home() / ".hermes" / "config.yaml"
     if not config_path.exists():
-        return None
+        return {}
 
     with open(config_path) as f:
         config = yaml.safe_load(f)
