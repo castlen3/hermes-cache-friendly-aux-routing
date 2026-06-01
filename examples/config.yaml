@@ -2,6 +2,10 @@
 #
 # This is an illustrative example. Replace provider names, model IDs,
 # and endpoints with your own.
+#
+# ⚠️ IMPORTANT: Always set explicit `base_url` and `api_key` on each
+# auxiliary task. Relying on `provider:` alone can cause routing drift
+# where requests end up at the wrong endpoint. See README.md for details.
 
 # --- Main Providers --------------------------------------------------
 
@@ -34,12 +38,17 @@ default_provider: main-model
 model: anthropic/claude-sonnet-4
 
 # --- Auxiliary Task Routing -------------------------------------------
+#
+# Key rule: each task gets explicit base_url + api_key, NOT just provider.
+# This prevents routing drift where Hermes resolves the wrong endpoint.
 
 auxiliary:
   # Generate conversation titles
   title_generation:
     provider: aux-model
     model: qwen/qwen3.5-35b-a3b
+    base_url: http://localhost:1234/v1
+    api_key: lm-studio
     fallback_chain:
       - provider: opencode-go
         model: deepseek-chat
@@ -48,6 +57,8 @@ auxiliary:
   web_extract:
     provider: aux-model
     model: qwen/qwen3.5-35b-a3b
+    base_url: http://localhost:1234/v1
+    api_key: lm-studio
     fallback_chain:
       - provider: opencode-go
         model: deepseek-chat
@@ -57,6 +68,8 @@ auxiliary:
   session_search:
     provider: aux-model
     model: qwen/qwen3.5-35b-a3b
+    base_url: http://localhost:1234/v1
+    api_key: lm-studio
     fallback_chain:
       - provider: opencode-go
         model: deepseek-chat
@@ -65,6 +78,8 @@ auxiliary:
   background_review:
     provider: aux-model
     model: qwen/qwen3.5-35b-a3b
+    base_url: http://localhost:1234/v1
+    api_key: lm-studio
 
   # Conversation compression — KEEP ON DEFAULT
   # DO NOT route compression to a cheap auxiliary model.

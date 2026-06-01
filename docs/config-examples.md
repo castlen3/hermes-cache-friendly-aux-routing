@@ -4,6 +4,10 @@ This document provides concrete configuration examples for routing auxiliary tas
 
 All examples assume Hermes-style `config.yaml` with an `auxiliary` section.
 
+> **⚠️ Key rule:** Always set explicit `base_url` and `api_key` on each
+> auxiliary task. Relying on `provider:` alone can cause routing drift.
+> See [README.md](../README.md#️-critical-pitfall-routing-drift) for details.
+
 ## Generic template
 
 ```yaml
@@ -11,6 +15,8 @@ auxiliary:
   title_generation:
     provider: aux-model
     model: your-aux-model-id
+    base_url: http://your-aux-endpoint:1234/v1
+    api_key: your-api-key
     fallback_chain:
       - provider: default-cloud-provider
         model: cheap-model
@@ -18,6 +24,8 @@ auxiliary:
   web_extract:
     provider: aux-model
     model: your-aux-model-id
+    base_url: http://your-aux-endpoint:1234/v1
+    api_key: your-api-key
     fallback_chain:
       - provider: default-cloud-provider
         model: cheap-model
@@ -25,6 +33,8 @@ auxiliary:
   session_search:
     provider: aux-model
     model: your-aux-model-id
+    base_url: http://your-aux-endpoint:1234/v1
+    api_key: your-api-key
     fallback_chain:
       - provider: default-cloud-provider
         model: cheap-model
@@ -32,6 +42,8 @@ auxiliary:
   background_review:
     provider: aux-model
     model: your-aux-model-id
+    base_url: http://your-aux-endpoint:1234/v1
+    api_key: your-api-key
     fallback_chain:
       - provider: default-cloud-provider
         model: cheap-model
@@ -58,15 +70,23 @@ auxiliary:
   title_generation:
     provider: mac-local
     model: qwen/qwen3.5-35b-a3b
+    base_url: http://localhost:1234/v1
+    api_key: lm-studio
   web_extract:
     provider: mac-local
     model: qwen/qwen3.5-35b-a3b
+    base_url: http://localhost:1234/v1
+    api_key: lm-studio
   session_search:
     provider: mac-local
     model: qwen/qwen3.5-35b-a3b
+    base_url: http://localhost:1234/v1
+    api_key: lm-studio
   background_review:
     provider: mac-local
     model: qwen/qwen3.5-35b-a3b
+    base_url: http://localhost:1234/v1
+    api_key: lm-studio
   compression:
     provider: auto
 ```
@@ -88,15 +108,23 @@ auxiliary:
   title_generation:
     provider: aux-lan
     model: qwen3.5-14b
+    base_url: http://192.168.1.100:1234/v1
+    api_key: not-needed
   web_extract:
     provider: aux-lan
     model: qwen3.5-14b
+    base_url: http://192.168.1.100:1234/v1
+    api_key: not-needed
   session_search:
     provider: aux-lan
     model: qwen3.5-14b
+    base_url: http://192.168.1.100:1234/v1
+    api_key: not-needed
   background_review:
     provider: aux-lan
     model: qwen3.5-14b
+    base_url: http://192.168.1.100:1234/v1
+    api_key: not-needed
   compression:
     provider: auto
 ```
@@ -118,15 +146,23 @@ auxiliary:
   title_generation:
     provider: cheap-cloud
     model: deepseek/deepseek-chat
+    base_url: https://openrouter.ai/api/v1
+    api_key: ${OPENROUTER_API_KEY}
   web_extract:
     provider: cheap-cloud
     model: deepseek/deepseek-chat
+    base_url: https://openrouter.ai/api/v1
+    api_key: ${OPENROUTER_API_KEY}
   session_search:
     provider: cheap-cloud
     model: deepseek/deepseek-chat
+    base_url: https://openrouter.ai/api/v1
+    api_key: ${OPENROUTER_API_KEY}
   background_review:
     provider: cheap-cloud
     model: deepseek/deepseek-chat
+    base_url: https://openrouter.ai/api/v1
+    api_key: ${OPENROUTER_API_KEY}
   compression:
     provider: auto
 ```
@@ -140,19 +176,27 @@ auxiliary:
   title_generation:
     provider: cheap-cloud
     model: deepseek/deepseek-chat
+    base_url: https://openrouter.ai/api/v1
+    api_key: ${OPENROUTER_API_KEY}
 
   web_extract:
     provider: cheap-cloud
     model: deepseek/deepseek-chat
+    base_url: https://openrouter.ai/api/v1
+    api_key: ${OPENROUTER_API_KEY}
 
   session_search:
     provider: aux-lan
     model: qwen3.5-14b
+    base_url: http://192.168.1.100:1234/v1
+    api_key: not-needed
     # session search benefits from local speed
 
   background_review:
     provider: aux-lan
-    model: qwen3.5-35b-a3b
+    model: qwen/qwen3.5-35b-a3b
+    base_url: http://192.168.1.100:1234/v1
+    api_key: not-needed
     # review quality matters more than title generation
 
   compression:
@@ -162,7 +206,7 @@ auxiliary:
 
 ## Example 5: Provider block (inline definition)
 
-For aux providers that don't need a full provider block:
+For aux providers that don't need a full provider block — set everything inline:
 
 ```yaml
 auxiliary:
@@ -172,6 +216,8 @@ auxiliary:
     model: small-model
     api_key: local-key
 ```
+
+This is the most explicit form and cannot drift.
 
 ## Case study: 200K context llama-server with local auxiliary Mac
 
@@ -191,24 +237,32 @@ auxiliary:
   title_generation:
     provider: mac-local
     model: qwen/qwen3.5-35b-a3b
+    base_url: http://192.168.31.20:1234/v1
+    api_key: lm-studio
     fallback_chain:
       - provider: opencode-go
         model: deepseek-chat
   web_extract:
     provider: mac-local
     model: qwen/qwen3.5-35b-a3b
+    base_url: http://192.168.31.20:1234/v1
+    api_key: lm-studio
     fallback_chain:
       - provider: opencode-go
         model: deepseek-chat
   session_search:
     provider: mac-local
     model: qwen/qwen3.5-35b-a3b
+    base_url: http://192.168.31.20:1234/v1
+    api_key: lm-studio
     fallback_chain:
       - provider: opencode-go
         model: deepseek-chat
   background_review:
     provider: mac-local
     model: qwen/qwen3.5-35b-a3b
+    base_url: http://192.168.31.20:1234/v1
+    api_key: lm-studio
   compression:
     provider: auto
 ```

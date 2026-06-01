@@ -74,6 +74,8 @@ auxiliary:
   title_generation:
     provider: aux-model
     model: small-or-cheap-model
+    base_url: http://your-aux-endpoint:1234/v1
+    api_key: your-api-key
     fallback_chain:
       - provider: default-cloud-provider
         model: fallback-model
@@ -81,14 +83,20 @@ auxiliary:
   web_extract:
     provider: aux-model
     model: small-or-cheap-model
+    base_url: http://your-aux-endpoint:1234/v1
+    api_key: your-api-key
 
   session_search:
     provider: aux-model
     model: small-or-cheap-model
+    base_url: http://your-aux-endpoint:1234/v1
+    api_key: your-api-key
 
   background_review:
     provider: aux-model
     model: small-or-cheap-model
+    base_url: http://your-aux-endpoint:1234/v1
+    api_key: your-api-key
 
   compression:
     provider: auto
@@ -96,6 +104,48 @@ auxiliary:
 
 See [`docs/config-examples.md`](docs/config-examples.md) for detailed
 examples with local LM Studio, remote LAN, cloud providers, and hybrid setups.
+
+## ⚠️ Critical Pitfall: Routing Drift
+
+**Setting only `provider:` + `model:` is NOT enough.** You must also set
+explicit `base_url` and `api_key` on each auxiliary task.
+
+Without explicit endpoints, Hermes resolves the URL from the provider block
+at runtime. This usually works, but can silently drift to the wrong endpoint
+when:
+
+- The main session switches providers mid-conversation (e.g. `/model` switch)
+- Multiple provider blocks exist with overlapping model names
+- Background tasks run on a different thread with a different provider context
+- `auxiliary.<task>.provider: auto` resolves against the current session's
+  provider instead of the intended auxiliary provider
+
+**Symptoms of routing drift:**
+
+- `HTTP 401: Model X is not supported` — request hit a cloud provider that
+  doesn't know the local model ID
+- Cache hit rate on the main model drops unexpectedly — auxiliary requests
+  are hitting the main endpoint and evicting the KV cache
+- `background_review routing: base=https://opencode.ai/zen/go` when you
+  expected `base=http://192.168.x.x:1234/v1`
+
+**The fix:** Always include `base_url` and `api_key` in each auxiliary task:
+
+```yaml
+# ❌ Fragile — provider alone can drift
+auxiliary:
+  title_generation:
+    provider: mac-local
+    model: qwen/qwen3.5-35b-a3b
+
+# ✅ Explicit — endpoint is locked
+auxiliary:
+  title_generation:
+    provider: mac-local
+    model: qwen/qwen3.5-35b-a3b
+    base_url: http://192.168.31.20:1234/v1
+    api_key: lm-studio
+```
 
 ## Case Study: 200K Context Local Model
 
@@ -116,15 +166,23 @@ auxiliary:
   title_generation:
     provider: mac-local
     model: qwen/qwen3.5-35b-a3b
+    base_url: http://192.168.31.20:1234/v1
+    api_key: lm-studio
   web_extract:
     provider: mac-local
     model: qwen/qwen3.5-35b-a3b
+    base_url: http://192.168.31.20:1234/v1
+    api_key: lm-studio
   session_search:
     provider: mac-local
     model: qwen/qwen3.5-35b-a3b
+    base_url: http://192.168.31.20:1234/v1
+    api_key: lm-studio
   background_review:
     provider: mac-local
     model: qwen/qwen3.5-35b-a3b
+    base_url: http://192.168.31.20:1234/v1
+    api_key: lm-studio
   compression:
     provider: auto
 ```
@@ -210,7 +268,8 @@ Compatible with:
 1. Identify which auxiliary tasks your agent runs (check agent logs)
 2. Set up an auxiliary provider (local LM Studio, secondary endpoint, or
    cheap cloud model)
-3. Add the `auxiliary` section to your `config.yaml`
+3. Add the `auxiliary` section to your `config.yaml` — **include explicit
+   `base_url` and `api_key` on every task** (see pitfall above)
 4. Verify routing by checking agent logs for `provider=` lines
 5. (Optional) Run `proxy_audit.py` to confirm background tasks are not
    hitting the main endpoint
