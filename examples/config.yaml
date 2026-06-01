@@ -3,7 +3,7 @@
 # This is an illustrative example. Replace provider names, model IDs,
 # and endpoints with your own.
 
-# ─── Main Providers ──────────────────────────────────────────
+# --- Main Providers --------------------------------------------------
 
 providers:
   # Your main model — handles conversation turns
@@ -27,13 +27,13 @@ providers:
     provider: opencode
     model: deepseek-v4-pro
 
-# ─── Default provider ────────────────────────────────────────
+# --- Default provider -------------------------------------------------
 
 # Used for the main conversation
 default_provider: main-model
 model: anthropic/claude-sonnet-4
 
-# ─── Auxiliary Task Routing ──────────────────────────────────
+# --- Auxiliary Task Routing -------------------------------------------
 
 auxiliary:
   # Generate conversation titles
@@ -72,7 +72,7 @@ auxiliary:
   compression:
     provider: auto
 
-# ─── Other settings ──────────────────────────────────────────
+# --- Other settings ---------------------------------------------------
 
 fallback_providers: []
 credential_pool_strategies: {}

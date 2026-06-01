@@ -5,7 +5,8 @@
 
 ## Problem
 
-Hermes and similar AI agents trigger many **background tasks** during normal operation:
+Hermes and similar AI agents trigger many **background tasks** during normal
+operation:
 
 - **title_generation** — auto-naming conversations
 - **web_extract** — reading and summarizing web content
@@ -14,7 +15,9 @@ Hermes and similar AI agents trigger many **background tasks** during normal ope
 - **memory** operations — reading/writing persistent facts
 - **compression** — summarizing long conversations
 
-These tasks often use the **same model endpoint** as the main conversation. When the main model uses prompt caching (KV cache, llama-server slot cache, or cloud prompt cache), background requests can:
+These tasks often use the **same model endpoint** as the main conversation.
+When the main model uses prompt caching (KV cache, llama-server slot cache,
+or cloud prompt cache), background requests can:
 
 - Evict the cached KV state from the inference slot
 - Fragment the prompt prefix, causing cache misses
@@ -55,9 +58,12 @@ The auxiliary provider can be:
 
 **Compression should usually remain on the default/high-quality routing.**
 
-Compression rewrites the entire conversation context. Cache continuity is already broken by definition during compression. What matters is **summary quality** — a poor summary degrades all subsequent turns.
+Compression rewrites the entire conversation context. Cache continuity is
+already broken by definition during compression. What matters is
+**summary quality** — a poor summary degrades all subsequent turns.
 
-Do not route compression to a cheap auxiliary model. Use the best model available.
+Do not route compression to a cheap auxiliary model. Use the best model
+available.
 
 ## Configuration
 
@@ -86,14 +92,14 @@ auxiliary:
 
   compression:
     provider: auto
-    # compression stays on default routing
 ```
 
-See [`docs/config-examples.md`](docs/config-examples.md) for detailed examples with local LM Studio, remote LAN, cloud providers, and hybrid setups.
+See [`docs/config-examples.md`](docs/config-examples.md) for detailed
+examples with local LM Studio, remote LAN, cloud providers, and hybrid setups.
 
 ## Case Study: 200K Context Local Model
 
-A real-world deployment with the following setup:
+A real-world style deployment with the following setup:
 
 | Component | Detail |
 |-----------|--------|
@@ -126,19 +132,23 @@ auxiliary:
 **Results:**
 
 - Main conversation cache hit rate: **~100%** on consecutive stable turns
-- Memory updates cause one-time partial prefill (expected — system prompt prefix changes)
+- Memory updates cause one-time partial prefill (expected — system prompt
+  prefix changes)
 - Cache recovers on the next turn
 - Background tasks no longer appear in the main endpoint's request log
 
 ## Cache Behavior Principles
 
-See [`docs/cache-behavior.md`](docs/cache-behavior.md) for the full set of principles derived from testing. Key takeaways:
+See [`docs/cache-behavior.md`](docs/cache-behavior.md) for the full set of
+principles derived from testing. Key takeaways:
 
-1. **Identical prompts should cache-hit** — if they don't, something is modifying the request.
-2. **Stable prefix improves hit rate** — keep the system prompt consistent.
-3. **Memory snapshot changes trigger one-time partial prefill** — this is normal, not a bug.
-4. **Tool calls temporarily reduce hit rate** — expected and acceptable.
-5. **Background tasks should avoid the main endpoint** — route them away.
+1. Identical prompts should cache-hit — if they don't, something is modifying
+   the request.
+2. Stable prefix improves hit rate — keep the system prompt consistent.
+3. Memory snapshot changes trigger one-time partial prefill — this is normal,
+   not a bug.
+4. Tool calls temporarily reduce hit rate — expected and acceptable.
+5. Background tasks should avoid the main endpoint — route them away.
 
 ## Fallback Strategy
 
@@ -151,7 +161,8 @@ The auxiliary provider may be unavailable. A good fallback strategy:
 
 ## Troubleshooting
 
-See [`docs/troubleshooting.md`](docs/troubleshooting.md) for diagnostic workflows, including:
+See [`docs/troubleshooting.md`](docs/troubleshooting.md) for diagnostic
+workflows, including:
 
 - Proxy audit setup to inspect real requests
 - Prefix hash comparison to detect system prompt changes
@@ -183,24 +194,26 @@ Compatible with:
 ├── LICENSE
 ├── .gitignore
 ├── docs/
-│   ├── background.md          # Prompt caching theory & why routing matters
-│   ├── config-examples.md     # Provider configuration examples
-│   ├── cache-behavior.md      # Principles from real-world testing
-│   └── troubleshooting.md     # Diagnostic workflows
+│   ├── background.md
+│   ├── config-examples.md
+│   ├── cache-behavior.md
+│   └── troubleshooting.md
 └── examples/
-    ├── config.yaml             # Full annotated config example
-    ├── background_review_patch.py  # Illustrative patch for Hermes
-    ├── proxy_audit.py          # Lightweight request audit proxy
-    └── request_timeline_example.md # Anonymized timeline analysis
+    ├── config.yaml
+    ├── background_review_patch.py
+    ├── proxy_audit.py
+    └── request_timeline_example.md
 ```
 
 ## Getting Started
 
 1. Identify which auxiliary tasks your agent runs (check agent logs)
-2. Set up an auxiliary provider (local LM Studio, secondary endpoint, or cheap cloud model)
+2. Set up an auxiliary provider (local LM Studio, secondary endpoint, or
+   cheap cloud model)
 3. Add the `auxiliary` section to your `config.yaml`
 4. Verify routing by checking agent logs for `provider=` lines
-5. (Optional) Run `proxy_audit.py` to confirm background tasks are not hitting the main endpoint
+5. (Optional) Run `proxy_audit.py` to confirm background tasks are not
+   hitting the main endpoint
 
 ## License
 
